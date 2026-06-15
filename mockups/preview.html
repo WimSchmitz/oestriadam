@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Oestriadam Timing — Visual Preview</title>
+<style>
+  :root{
+    --sea-900:#04282f; --sea-800:#063e49; --sea-700:#0a5560; --sea-600:#0e7a86;
+    --aqua:#13b3c4; --aqua-soft:#e6f7f9; --sand:#f4efe6;
+    --accent:#ff6b35;            /* energetic finish/orange */
+    --ink:#0b1a1e; --muted:#5f7479; --line:#e3ebec; --bg:#f6f9f9; --white:#fff;
+    --gold:#e8b53a;
+    --font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font);background:
+        radial-gradient(1200px 500px at 50% -200px,#0a5560 0%,#04282f 60%) fixed;
+        color:var(--ink);padding:40px 16px 80px}
+  .head{max-width:1100px;margin:0 auto 28px;color:#dff3f5;text-align:center}
+  .head h1{font-size:26px;margin:0 0 6px;letter-spacing:.5px}
+  .head p{margin:0;color:#9fc6cc;font-size:14px}
+  .grid{display:flex;gap:28px;justify-content:center;flex-wrap:wrap;max-width:1340px;margin:0 auto}
+  .grid>div{width:380px}
+  .phone{width:380px;background:var(--bg);border-radius:36px;padding:14px;
+         box-shadow:0 30px 60px -20px rgba(0,0,0,.55);border:7px solid #0b1416}
+  .screen{background:var(--bg);border-radius:24px;overflow:hidden;height:720px;display:flex;flex-direction:column}
+  .caption{color:#bfe2e6;text-align:center;font-size:13px;margin-top:12px;font-weight:600;letter-spacing:.3px}
+
+  /* shared bars */
+  .topbar{background:linear-gradient(120deg,var(--sea-800),var(--sea-600));color:#fff;padding:16px 16px 14px}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:800;letter-spacing:1px;font-size:15px}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--aqua);box-shadow:0 0 0 4px rgba(19,179,196,.25)}
+  .live{margin-left:auto;font-size:11px;background:rgba(255,255,255,.15);padding:3px 8px;border-radius:20px;display:flex;align-items:center;gap:5px}
+  .live .pulse{width:7px;height:7px;border-radius:50%;background:#52f0a8;box-shadow:0 0 0 0 rgba(82,240,168,.7);animation:p 1.6s infinite}
+  @keyframes p{0%{box-shadow:0 0 0 0 rgba(82,240,168,.6)}70%{box-shadow:0 0 0 8px rgba(82,240,168,0)}100%{box-shadow:0 0 0 0 rgba(82,240,168,0)}}
+  .sub{font-size:12px;color:#bfe6ea;margin-top:3px}
+
+  /* leaderboard */
+  .tabs{display:flex;gap:6px;padding:12px;background:var(--white);border-bottom:1px solid var(--line)}
+  .tab{font-size:12px;padding:7px 12px;border-radius:20px;background:#eef3f3;color:var(--muted);font-weight:600}
+  .tab.on{background:var(--sea-700);color:#fff}
+  .rows{overflow:auto;flex:1;background:var(--white)}
+  .row{display:flex;align-items:center;gap:11px;padding:13px 14px;border-bottom:1px solid var(--line)}
+  .rank{width:26px;text-align:center;font-weight:800;font-size:16px;font-variant-numeric:tabular-nums;flex-shrink:0}
+  .rank.podium{color:var(--sea-600)}
+  .av{width:38px;height:38px;border-radius:11px;background:var(--aqua-soft);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+  .nm{flex:1;min-width:0}
+  .nm b{font-size:15px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.25}
+  .nm small{color:var(--muted);font-size:12px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* status shown as a compact icon-chip so long names never get clipped */
+  .badge{font-size:18px;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .b-swim{background:#e6f7f9}
+  .b-bike{background:#fff1e8}
+  .b-run{background:#eafaf0}
+  .b-fin{background:var(--sea-700)}
+  .tm{font-variant-numeric:tabular-nums;font-weight:800;font-size:16px;width:96px;text-align:right;flex-shrink:0}
+  .tm small{display:block;font-weight:500;color:var(--muted);font-size:11px}
+  .foot{padding:11px;text-align:center;font-size:12px;color:var(--muted);background:var(--white);border-top:1px solid var(--line)}
+
+  /* station */
+  .st{flex:1;background:var(--white);display:flex;flex-direction:column;padding:16px;overflow:auto}
+  .st .point{font-weight:800;font-size:19px;color:var(--sea-800)}
+  .bibin{margin-top:12px;border:2px solid var(--line);border-radius:14px;text-align:center;
+         font-size:44px;font-weight:800;padding:14px;color:var(--ink);font-variant-numeric:tabular-nums;background:#fbfdfd}
+  .match{margin-top:8px;text-align:center;color:var(--sea-600);font-weight:600;font-size:14px}
+  .rec{margin-top:14px;background:linear-gradient(120deg,#13b3c4,#0e7a86);color:#fff;border:none;
+       font-size:22px;font-weight:800;letter-spacing:1px;padding:20px;border-radius:16px;box-shadow:0 10px 20px -8px rgba(14,122,134,.7)}
+  .toast{margin-top:12px;background:#eafaf0;color:#157a45;border-radius:10px;padding:10px 12px;font-weight:600;font-size:13px;text-align:center}
+  .rc-h{margin:16px 0 4px;font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.6px}
+  .rc{display:flex;justify-content:space-between;align-items:center;padding:9px 2px;border-bottom:1px solid var(--line);font-size:14px}
+  .rc .undo{color:#c2410c;font-weight:700;font-size:13px}
+  .keypad{margin-top:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+  .key{background:#eef3f3;border-radius:13px;text-align:center;padding:16px;font-size:24px;font-weight:700;color:var(--sea-800)}
+  .key.alt{background:#e3ebec;color:var(--muted);font-size:18px}
+
+  /* admin */
+  .ad{flex:1;background:var(--white);padding:16px;overflow:auto}
+  .card{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+  .card h3{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+  .gun{font-size:22px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
+  .btn{border:none;border-radius:10px;padding:10px 14px;font-weight:700;font-size:13px}
+  .btn-go{background:var(--accent);color:#fff}
+  .btn-mut{background:#eef3f3;color:var(--sea-800)}
+  .btn-exp{background:var(--sea-700);color:#fff}
+  .plist{font-size:13px}
+  .pl{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)}
+  .pl .bib{color:var(--muted);width:34px}
+  .pl select{margin-left:auto;font-size:11px;border:1px solid var(--line);border-radius:6px;padding:3px}
+</style>
+</head>
+<body>
+  <div class="head">
+    <h1>OESTRIADAM · Live Timing — visual preview</h1>
+    <p>Concept mockup · sea-teal palette · 1 km 🏊 · 42 km 🚴 · 10 km 🏃 — react & tweak freely</p>
+  </div>
+
+  <div class="grid">
+
+    <!-- LEADERBOARD -->
+    <div>
+    <div class="phone"><div class="screen">
+      <div class="topbar">
+        <div class="brand"><span class="dot"></span>OESTRIADAM
+          <span class="live"><span class="pulse"></span>LIVE</span>
+        </div>
+        <div class="sub">Quarter triathlon · 20 June 2026</div>
+      </div>
+      <div class="tabs">
+        <span class="tab on">All</span>
+        <span class="tab">Individuals</span>
+        <span class="tab">Relays</span>
+        <span class="tab">M 30-39</span>
+      </div>
+      <div class="rows">
+        <div class="row"><span class="rank podium">1</span>
+          <span class="nm"><b>Piet Janssen</b><small>#02 · M 30-39 · cat 1</small></span>
+          <span class="badge b-run">🏃</span>
+          <span class="tm">02:01:12<small>running</small></span></div>
+        <div class="row"><span class="rank podium">2</span>
+          <span class="nm"><b>Sara De Wit</b><small>#07 · V 30-39 · cat 1</small></span>
+          <span class="badge b-run">🏃</span>
+          <span class="tm">02:03:48<small>running</small></span></div>
+        <div class="row"><span class="rank">3</span>
+          <span class="nm"><b>Team Zeester</b><small>#21 · Relay · cat 2</small></span>
+          <span class="badge b-bike">🚴</span>
+          <span class="tm">01:34:05<small>cycling</small></span></div>
+        <div class="row"><span class="rank">4</span>
+          <span class="nm"><b>Jan de Vries</b><small>#01 · M 30-39 · cat 2</small></span>
+          <span class="badge b-bike">🚴</span>
+          <span class="tm">01:36:20<small>cycling</small></span></div>
+        <div class="row"><span class="rank">5</span>
+          <span class="nm"><b>Lotte Maes</b><small>#14 · V 18-29</small></span>
+          <span class="badge b-swim">🏊</span>
+          <span class="tm">00:18:51<small>swimming</small></span></div>
+        <div class="row" style="opacity:.97"><span class="rank">✓</span>
+          <span class="nm"><b>Wout Peeters</b><small>#05 · M 40-49 · cat 1</small></span>
+          <span class="badge b-fin">🏅</span>
+          <span class="tm">02:11:40<small>finished</small></span></div>
+      </div>
+      <div class="foot">Tap a row for splits · updates live · 38 finishers</div>
+    </div></div>
+    <div class="caption">Public leaderboard — what spectators open on their phone</div>
+    </div>
+
+    <!-- STATION -->
+    <div>
+    <div class="phone"><div class="screen">
+      <div class="topbar" style="background:linear-gradient(120deg,#0a5560,#13b3c4)">
+        <div class="brand"><span class="dot" style="background:#fff"></span>STATION</div>
+        <div class="sub" style="color:#e6fbfd">Volunteer · timing point</div>
+      </div>
+      <div class="st">
+        <div class="point">T1 — Swim → Bike</div>
+        <div class="bibin">142</div>
+        <div class="match">✓ #142 · Jan de Vries</div>
+        <button class="rec">RECORD</button>
+        <div class="toast">✅ #098 Lotte Maes recorded — 00:32:14</div>
+        <div class="rc-h">Recent at this station</div>
+        <div class="rc"><span>#098 Lotte Maes · 00:32:14</span><span class="undo">undo</span></div>
+        <div class="rc"><span>#076 Team Zeester · 00:31:50</span><span class="undo">undo</span></div>
+        <div class="keypad">
+          <span class="key">1</span><span class="key">2</span><span class="key">3</span>
+          <span class="key">4</span><span class="key">5</span><span class="key">6</span>
+          <span class="key">7</span><span class="key">8</span><span class="key">9</span>
+          <span class="key alt">Clear</span><span class="key">0</span><span class="key alt">⌫</span>
+        </div>
+      </div>
+    </div></div>
+    <div class="caption">Station screen — big bib pad, one-tap RECORD, undo safety net</div>
+    </div>
+
+    <!-- ADMIN -->
+    <div>
+    <div class="phone"><div class="screen">
+      <div class="topbar" style="background:linear-gradient(120deg,#04282f,#0a5560)">
+        <div class="brand"><span class="dot" style="background:var(--accent)"></span>ADMIN</div>
+        <div class="sub">Race control & roster</div>
+      </div>
+      <div class="ad">
+        <div class="card">
+          <h3>Race</h3>
+          <div>Gun time: <span class="gun">10:00:03</span></div>
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-go">START RACE</button>
+            <button class="btn btn-mut">Clear</button>
+            <button class="btn btn-exp">Export CSV</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Import roster (CSV)</h3>
+          <div style="border:1px dashed var(--line);border-radius:10px;padding:14px;text-align:center;color:var(--muted);font-size:12px">
+            Paste CSV · 124 rows parsed · 0 errors ✓
+          </div>
+          <button class="btn btn-mut" style="margin-top:10px">Import</button>
+        </div>
+        <div class="card">
+          <h3>Participants · 124</h3>
+          <div class="plist">
+            <div class="pl"><span class="bib">#01</span>Jan de Vries
+              <select><option>active</option><option>DNF</option><option>DNS</option></select></div>
+            <div class="pl"><span class="bib">#02</span>Piet Janssen
+              <select><option>active</option><option>DNF</option><option>DNS</option></select></div>
+            <div class="pl"><span class="bib">#21</span>Team Zeester
+              <select><option>active</option><option>DNF</option><option>DNS</option></select></div>
+            <div class="pl" style="opacity:.55"><span class="bib">#33</span>Mark Smit
+              <select><option>DNF</option><option>active</option></select></div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <div class="caption">Admin — gun time, CSV import, DNF/DNS, results export</div>
+    </div>
+
+  </div>
+</body>
+</html>
