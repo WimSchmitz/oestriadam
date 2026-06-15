@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import type { Point } from "@/lib/types";
 
 const KEY_STORAGE = "oestriadam-station-key";
@@ -108,6 +108,22 @@ export function StationClient({ point, label }: { point: Point; label: string })
     }
   }
 
+  // Enter always records, no matter what's focused (e.g. an on-screen keypad
+  // button after tapping it) — without this, Enter re-fires that button.
+  const recordRef = useRef(record);
+  recordRef.current = record;
+  useEffect(() => {
+    if (!key) return; // only while the recording view is shown
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        recordRef.current();
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [key]);
+
   async function undo(splitId: string) {
     if (!key) return;
     await fetch("/api/splits", {
@@ -194,9 +210,6 @@ export function StationClient({ point, label }: { point: Point; label: string })
           autoFocus
           value={bib}
           onChange={(e) => setBib(e.target.value.replace(/\D/g, "").slice(0, 5))}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") record();
-          }}
           placeholder="Bib #"
           aria-label="Bib number"
           className="mt-3 border-2 border-[var(--line)] focus:border-[var(--aqua)] outline-none rounded-2xl text-center text-5xl font-extrabold py-4 tnum bg-[#fbfdfd] w-full placeholder:text-[var(--line)]"
