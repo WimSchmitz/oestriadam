@@ -193,7 +193,14 @@ export function LeaderboardClient({
       </ul>
 
       <footer className="px-4 py-3 text-center text-xs text-[var(--muted)] border-t border-[var(--line)] bg-white">
-        Tap a row for splits · updates live · {finishers} finisher{finishers === 1 ? "" : "s"}
+        <div>Tap a row for splits · updates live · {finishers} finisher{finishers === 1 ? "" : "s"}</div>
+        <nav className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1">
+          <span className="font-semibold text-[var(--muted)]">Organizers:</span>
+          <a className="text-[var(--sea-600)] font-semibold hover:underline" href="/station/t1">T1</a>
+          <a className="text-[var(--sea-600)] font-semibold hover:underline" href="/station/t2">T2</a>
+          <a className="text-[var(--sea-600)] font-semibold hover:underline" href="/station/finish">Finish</a>
+          <a className="text-[var(--sea-600)] font-semibold hover:underline" href="/admin">Admin</a>
+        </nav>
       </footer>
     </div>
   );
