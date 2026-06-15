@@ -6,8 +6,6 @@ const KEY_STORAGE = "oestriadam-station-key";
 
 interface RecentSplit {
   id: string;
-  bib?: number;
-  name?: string;
   recordedAt: string;
 }
 
@@ -17,23 +15,45 @@ interface Toast {
 }
 
 export function StationClient({ point, label }: { point: Point; label: string }) {
-  const [key, setKey] = useState<string | null>(null);
+  const [key, setKey] = useState<string | null>(null); // null = still resolving
   const [keyInput, setKeyInput] = useState("");
+  const [keyError, setKeyError] = useState("");
+  const [checking, setChecking] = useState(false);
   const [bib, setBib] = useState("");
   const [recent, setRecent] = useState<RecentSplit[]>([]);
   const [toast, setToast] = useState<Toast | null>(null);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    // A "secret link" (?key=…) takes precedence and is remembered on the device.
-    const fromUrl = new URLSearchParams(window.location.search).get("key");
-    if (fromUrl) {
-      localStorage.setItem(KEY_STORAGE, fromUrl);
-      setKey(fromUrl);
-      return;
+  // Validate a candidate key against the server, then accept or reject it.
+  const verifyAndSet = useCallback(async (candidate: string) => {
+    setChecking(true);
+    setKeyError("");
+    try {
+      const res = await fetch(`/api/auth?scope=station&key=${encodeURIComponent(candidate)}`);
+      if (res.ok) {
+        localStorage.setItem(KEY_STORAGE, candidate);
+        setKey(candidate);
+      } else {
+        localStorage.removeItem(KEY_STORAGE);
+        setKey("");
+        setKeyError("Wrong station key — try again.");
+      }
+    } catch {
+      setKey("");
+      setKeyError("Could not reach the server. Check your connection.");
+    } finally {
+      setChecking(false);
     }
-    setKey(localStorage.getItem(KEY_STORAGE) ?? "");
   }, []);
+
+  // On mount: prefer a ?key= link, then a remembered key; validate before use.
+  useEffect(() => {
+    const fromUrl = new URLSearchParams(window.location.search).get("key");
+    const stored = localStorage.getItem(KEY_STORAGE);
+    const candidate = fromUrl ?? stored;
+    if (candidate) verifyAndSet(candidate);
+    else setKey("");
+  }, [verifyAndSet]);
 
   const loadRecent = useCallback(async () => {
     if (!key) return;
@@ -100,31 +120,43 @@ export function StationClient({ point, label }: { point: Point; label: string })
     else setBib((b) => (b.length < 5 ? b + d : b));
   }
 
-  // key entry gate
-  if (key === null) return null; // hydration guard
-  if (key === "") {
+  // --- key entry gate ---
+  if (key === null && !keyError) {
+    return (
+      <main className="flex-1 flex items-center justify-center p-6 text-[var(--muted)]">
+        Checking access…
+      </main>
+    );
+  }
+  if (!key) {
     return (
       <main className="flex-1 flex items-center justify-center p-6">
-        <div className="w-full max-w-sm bg-white rounded-2xl shadow p-6">
+        <form
+          className="w-full max-w-sm bg-white rounded-2xl shadow p-6"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (keyInput) verifyAndSet(keyInput);
+          }}
+        >
           <h1 className="text-xl font-extrabold text-[var(--sea-800)] mb-1">{label}</h1>
-          <p className="text-sm text-[var(--muted)] mb-4">Enter the station key to begin.</p>
+          <p className="text-sm text-[var(--muted)] mb-4">Enter the station password to begin.</p>
           <input
             type="password"
+            autoFocus
             value={keyInput}
             onChange={(e) => setKeyInput(e.target.value)}
-            placeholder="Station key"
+            placeholder="Station password"
             className="border-2 border-[var(--line)] rounded-lg p-3 w-full text-lg"
           />
+          {keyError && <p className="mt-2 text-sm text-[#b42318]">{keyError}</p>}
           <button
-            onClick={() => {
-              localStorage.setItem(KEY_STORAGE, keyInput);
-              setKey(keyInput);
-            }}
-            className="mt-3 w-full bg-[var(--sea-700)] text-white font-bold py-3 rounded-lg"
+            type="submit"
+            disabled={!keyInput || checking}
+            className="mt-3 w-full bg-[var(--sea-700)] text-white font-bold py-3 rounded-lg disabled:opacity-40"
           >
-            Continue
+            {checking ? "Checking…" : "Continue"}
           </button>
-        </div>
+        </form>
       </main>
     );
   }
@@ -137,10 +169,11 @@ export function StationClient({ point, label }: { point: Point; label: string })
         <div className="font-extrabold tracking-wider text-sm flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-white" /> STATION
           <button
-            className="ml-auto text-[11px] underline/30 underline opacity-80"
+            className="ml-auto text-[11px] underline opacity-80"
             onClick={() => {
               localStorage.removeItem(KEY_STORAGE);
               setKey("");
+              setKeyInput("");
             }}
           >
             change key
@@ -151,9 +184,19 @@ export function StationClient({ point, label }: { point: Point; label: string })
       <div className="flex-1 flex flex-col p-4 max-w-sm w-full mx-auto">
         <h1 className="text-lg font-extrabold text-[var(--sea-800)]">{label}</h1>
 
-        <div className="mt-3 border-2 border-[var(--line)] rounded-2xl text-center text-5xl font-extrabold py-4 tnum bg-[#fbfdfd] min-h-[88px]">
-          {bib || <span className="text-[var(--line)]">— —</span>}
-        </div>
+        {/* Bib entry: type with a keyboard OR use the on-screen keypad below. */}
+        <input
+          inputMode="numeric"
+          autoFocus
+          value={bib}
+          onChange={(e) => setBib(e.target.value.replace(/\D/g, "").slice(0, 5))}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") record();
+          }}
+          placeholder="Bib #"
+          aria-label="Bib number"
+          className="mt-3 border-2 border-[var(--line)] focus:border-[var(--aqua)] outline-none rounded-2xl text-center text-5xl font-extrabold py-4 tnum bg-[#fbfdfd] w-full placeholder:text-[var(--line)]"
+        />
 
         <button
           onClick={record}

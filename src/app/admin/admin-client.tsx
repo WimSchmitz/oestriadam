@@ -2,27 +2,50 @@
 import { useEffect, useState, useCallback } from "react";
 import type { Participant, ParticipantStatus, Race } from "@/lib/types";
 import { formatDuration, diffMs } from "@/lib/time";
+import { generateMockRoster } from "@/lib/mock-roster";
 
 const KEY_STORAGE = "oestriadam-admin-key";
 
 export function AdminClient() {
-  const [key, setKey] = useState<string | null>(null);
+  const [key, setKey] = useState<string | null>(null); // null = still resolving
   const [keyInput, setKeyInput] = useState("");
+  const [keyError, setKeyError] = useState("");
+  const [checking, setChecking] = useState(false);
   const [race, setRace] = useState<Race | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [csv, setCsv] = useState("");
   const [msg, setMsg] = useState("");
   const [, setTick] = useState(0);
 
+  // Validate a candidate key against the server, then accept or reject it.
+  const verifyAndSet = useCallback(async (candidate: string) => {
+    setChecking(true);
+    setKeyError("");
+    try {
+      const res = await fetch(`/api/auth?scope=admin&key=${encodeURIComponent(candidate)}`);
+      if (res.ok) {
+        localStorage.setItem(KEY_STORAGE, candidate);
+        setKey(candidate);
+      } else {
+        localStorage.removeItem(KEY_STORAGE);
+        setKey("");
+        setKeyError("Wrong admin password — try again.");
+      }
+    } catch {
+      setKey("");
+      setKeyError("Could not reach the server. Check your connection.");
+    } finally {
+      setChecking(false);
+    }
+  }, []);
+
   useEffect(() => {
     const fromUrl = new URLSearchParams(window.location.search).get("key");
-    if (fromUrl) {
-      localStorage.setItem(KEY_STORAGE, fromUrl);
-      setKey(fromUrl);
-      return;
-    }
-    setKey(localStorage.getItem(KEY_STORAGE) ?? "");
-  }, []);
+    const stored = localStorage.getItem(KEY_STORAGE);
+    const candidate = fromUrl ?? stored;
+    if (candidate) verifyAndSet(candidate);
+    else setKey("");
+  }, [verifyAndSet]);
 
   const headers = useCallback(
     () => ({ "content-type": "application/json", "x-admin-key": key ?? "" }),
@@ -83,30 +106,42 @@ export function AdminClient() {
     load();
   }
 
-  if (key === null) return null; // hydration guard
-  if (key === "") {
+  if (key === null && !keyError) {
+    return (
+      <main className="flex-1 flex items-center justify-center p-6 text-[var(--muted)]">
+        Checking access…
+      </main>
+    );
+  }
+  if (!key) {
     return (
       <main className="flex-1 flex items-center justify-center p-6">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow p-6">
+        <form
+          className="w-full max-w-md bg-white rounded-2xl shadow p-6"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (keyInput) verifyAndSet(keyInput);
+          }}
+        >
           <h1 className="text-xl font-extrabold text-[var(--sea-800)] mb-1">Admin</h1>
-          <p className="text-sm text-[var(--muted)] mb-4">Enter the admin key.</p>
+          <p className="text-sm text-[var(--muted)] mb-4">Enter the admin password.</p>
           <input
             type="password"
+            autoFocus
             value={keyInput}
             onChange={(e) => setKeyInput(e.target.value)}
-            placeholder="Admin key"
+            placeholder="Admin password"
             className="border-2 border-[var(--line)] rounded-lg p-3 w-full text-lg"
           />
+          {keyError && <p className="mt-2 text-sm text-[#b42318]">{keyError}</p>}
           <button
-            onClick={() => {
-              localStorage.setItem(KEY_STORAGE, keyInput);
-              setKey(keyInput);
-            }}
-            className="mt-3 w-full bg-[var(--sea-700)] text-white font-bold py-3 rounded-lg"
+            type="submit"
+            disabled={!keyInput || checking}
+            className="mt-3 w-full bg-[var(--sea-700)] text-white font-bold py-3 rounded-lg disabled:opacity-40"
           >
-            Continue
+            {checking ? "Checking…" : "Continue"}
           </button>
-        </div>
+        </form>
       </main>
     );
   }
@@ -124,6 +159,7 @@ export function AdminClient() {
             onClick={() => {
               localStorage.removeItem(KEY_STORAGE);
               setKey("");
+              setKeyInput("");
             }}
           >
             change key
@@ -176,16 +212,24 @@ export function AdminClient() {
 
         {/* CSV import */}
         <section className="bg-white border border-[var(--line)] rounded-xl p-4">
-          <h2 className="text-xs font-bold uppercase tracking-wide text-[var(--muted)] mb-2">
-            Import roster (CSV)
-          </h2>
+          <div className="flex items-center mb-2">
+            <h2 className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">
+              Import roster (CSV)
+            </h2>
+            <button
+              onClick={() => setCsv(generateMockRoster(24))}
+              className="ml-auto text-xs font-semibold text-[var(--sea-700)] border border-[var(--line)] rounded-lg px-2.5 py-1"
+            >
+              ✨ Generate demo data
+            </button>
+          </div>
           <p className="text-[11px] text-[var(--muted)] mb-2 font-mono break-all">
             bib,name,type,team_name,category,relay_swimmer,relay_cyclist,relay_runner
           </p>
           <textarea
             value={csv}
             onChange={(e) => setCsv(e.target.value)}
-            placeholder="Paste CSV rows here…"
+            placeholder="Paste CSV rows here… or click “Generate demo data”"
             className="border border-[var(--line)] rounded-lg w-full h-32 p-2 font-mono text-sm"
           />
           <button
