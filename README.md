@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Oestriadam Live Timing
 
-## Getting Started
+Phone-first live timing for the **Oestriadam** quarter-triathlon (1 km swim · 42 km bike · 10 km run).
 
-First, run the development server:
+Volunteers record split times at three stations; spectators follow a live public leaderboard; organizers manage the roster and results from an admin screen.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Stack
+
+Next.js (App Router, TypeScript) · Supabase (Postgres + Realtime) · Tailwind CSS · Vitest.
+
+## Setup
+
+1. **Create a Supabase project**, open the SQL Editor, and run [`supabase/schema.sql`](supabase/schema.sql). It creates the tables, seeds the single race row, enables Realtime, and adds public read-only RLS policies.
+2. Copy `.env.local.example` to `.env.local` and fill in:
+   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (from Supabase → Project Settings → API)
+   - `STATION_KEY` and `ADMIN_KEY` — pick your own secrets; share the station key with volunteers on the day.
+3. `npm install && npm run dev`, then open http://localhost:3000.
+
+## Screens
+
+- `/` — **public live leaderboard** (open to all). Tap a row for swim/bike/run splits.
+- `/station/t1`, `/station/t2`, `/station/finish` — **volunteer timing** (enter the `STATION_KEY` once; it's remembered on the device).
+- `/admin` — set the gun time, import the roster CSV, manage participants, mark DNF/DNS, export results (enter the `ADMIN_KEY`).
+
+## Race-day checklist
+
+1. **Admin** → Import roster CSV, confirm the participant count.
+2. Open each station screen on its phone, enter the station key.
+3. At the gun: **Admin → START RACE**.
+4. Volunteers record bibs at **T1**, **T2**, **Finish** (type bib → RECORD; undo via the recent list).
+5. After the race: mark any **DNF/DNS**, then **Export CSV** for announcing/posting.
+
+## CSV format
+
+```
+bib,name,type,team_name,category,relay_swimmer,relay_cyclist,relay_runner
+1,Jan de Vries,individual,,M 30-39,,,
+2,Team Zeester,relay,Team Zeester,Relay,Ann,Bob,Cara
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`type` is `individual` or `relay`. Only `bib`, `name`, `type` are required; the rest are optional. Re-importing the same bib updates that participant.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deploy (Vercel)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Push to GitHub, import the repo into Vercel, and set the same five env vars in the Vercel project settings. Reliable mobile/wifi at the venue is assumed; the leaderboard pushes live via Supabase Realtime and falls back to 10-second polling if the socket drops.
 
-## Learn More
+## Tests
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+npm run test       # unit + integration (pure logic: time, progress, ranking, csv, results)
+npx tsc --noEmit   # type-check
+npm run build      # production build
+```

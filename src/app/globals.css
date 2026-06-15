@@ -1,26 +1,61 @@
 @import "tailwindcss";
 
+/* Oestriadam sea-teal palette (light theme, phone-first) */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --sea-900: #04282f;
+  --sea-800: #063e49;
+  --sea-700: #0a5560;
+  --sea-600: #0e7a86;
+  --aqua: #13b3c4;
+  --aqua-soft: #e6f7f9;
+  --accent: #ff6b35;
+  --ink: #0b1a1e;
+  --muted: #5f7479;
+  --line: #e3ebec;
+  --bg: #f6f9f9;
+  --white: #ffffff;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-sea-900: var(--sea-900);
+  --color-sea-800: var(--sea-800);
+  --color-sea-700: var(--sea-700);
+  --color-sea-600: var(--sea-600);
+  --color-aqua: var(--aqua);
+  --color-aqua-soft: var(--aqua-soft);
+  --color-accent: var(--accent);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-bg: var(--bg);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html, body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Subtle pulse for the LIVE indicator */
+@keyframes oestriadam-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(82, 240, 168, 0.6); }
+  70% { box-shadow: 0 0 0 8px rgba(82, 240, 168, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(82, 240, 168, 0); }
+}
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: #52f0a8;
+  animation: oestriadam-pulse 1.6s infinite;
 }
