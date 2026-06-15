@@ -15,6 +15,12 @@ export function AdminClient() {
   const [, setTick] = useState(0);
 
   useEffect(() => {
+    const fromUrl = new URLSearchParams(window.location.search).get("key");
+    if (fromUrl) {
+      localStorage.setItem(KEY_STORAGE, fromUrl);
+      setKey(fromUrl);
+      return;
+    }
     setKey(localStorage.getItem(KEY_STORAGE) ?? "");
   }, []);
 

@@ -25,6 +25,13 @@ export function StationClient({ point, label }: { point: Point; label: string })
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    // A "secret link" (?key=…) takes precedence and is remembered on the device.
+    const fromUrl = new URLSearchParams(window.location.search).get("key");
+    if (fromUrl) {
+      localStorage.setItem(KEY_STORAGE, fromUrl);
+      setKey(fromUrl);
+      return;
+    }
     setKey(localStorage.getItem(KEY_STORAGE) ?? "");
   }, []);
 
