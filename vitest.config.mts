@@ -5,9 +5,10 @@ import path from "node:path";
 export default defineConfig({
   plugins: [react()],
   test: {
-    environment: "jsdom",
+    // All tests are pure logic (no DOM), so the lightweight node environment
+    // avoids jsdom's ESM CSS-parser incompatibility under Vitest 4.
+    environment: "node",
     globals: true,
-    setupFiles: ["./vitest.setup.ts"],
   },
   resolve: {
     alias: { "@": path.resolve(__dirname, "./src") },
