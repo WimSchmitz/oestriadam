@@ -7,6 +7,8 @@ const KEY_STORAGE = "oestriadam-station-key";
 interface RecentSplit {
   id: string;
   recordedAt: string;
+  bib: number | null;
+  name: string | null;
 }
 
 interface Toast {
@@ -64,6 +66,8 @@ export function StationClient({ point, label }: { point: Point; label: string })
         (data.splits ?? []).map((s: Record<string, unknown>) => ({
           id: s.id as string,
           recordedAt: s.recordedAt as string,
+          bib: (s.bib as number | null) ?? null,
+          name: (s.name as string | null) ?? null,
         })),
       );
     }
@@ -227,11 +231,17 @@ export function StationClient({ point, label }: { point: Point; label: string })
             </h2>
             <ul className="text-sm">
               {recent.slice(0, 4).map((s) => (
-                <li key={s.id} className="flex justify-between items-center py-2 border-b border-[var(--line)]">
-                  <span className="tnum">{new Date(s.recordedAt).toLocaleTimeString()}</span>
-                  <button className="text-[#c2410c] font-bold text-[13px]" onClick={() => undo(s.id)}>
-                    undo
-                  </button>
+                <li key={s.id} className="flex justify-between items-center gap-2 py-2 border-b border-[var(--line)]">
+                  <span className="min-w-0 truncate">
+                    {s.bib != null && <span className="text-[var(--muted)] mr-1.5">#{s.bib}</span>}
+                    <span className="font-medium">{s.name ?? "—"}</span>
+                  </span>
+                  <span className="flex items-center gap-3 shrink-0">
+                    <span className="tnum text-[var(--muted)]">{new Date(s.recordedAt).toLocaleTimeString()}</span>
+                    <button className="text-[#c2410c] font-bold text-[13px]" onClick={() => undo(s.id)}>
+                      undo
+                    </button>
+                  </span>
                 </li>
               ))}
             </ul>

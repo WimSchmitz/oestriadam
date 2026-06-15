@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { keyIsValid } from "@/lib/auth";
-import { getParticipantByBib, recordSplit, voidSplit, getSplits } from "@/server/data";
+import {
+  getParticipantByBib,
+  getParticipants,
+  recordSplit,
+  voidSplit,
+  getSplits,
+} from "@/server/data";
 import { POINTS, type Point } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -35,11 +41,24 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true, split, participant });
 }
 
-// GET recent splits for a point (?point=t1) for the station "recent" list.
+// GET recent splits for a point (?point=t1) for the station "recent" list,
+// enriched with the participant's bib + display name.
 export async function GET(req: NextRequest) {
   if (!authed(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const point = new URL(req.url).searchParams.get("point");
-  const all = await getSplits();
-  const filtered = all.filter((s) => !s.voided && (!point || s.point === point));
-  return NextResponse.json({ splits: filtered.slice(-15).reverse() });
+  const [all, participants] = await Promise.all([getSplits(), getParticipants()]);
+  const byId = new Map(participants.map((p) => [p.id, p]));
+  const recent = all
+    .filter((s) => !s.voided && (!point || s.point === point))
+    .slice(-15)
+    .reverse()
+    .map((s) => {
+      const p = byId.get(s.participantId);
+      return {
+        ...s,
+        bib: p?.bib ?? null,
+        name: p ? (p.type === "relay" ? p.teamName ?? p.name : p.name) : null,
+      };
+    });
+  return NextResponse.json({ splits: recent });
 }
