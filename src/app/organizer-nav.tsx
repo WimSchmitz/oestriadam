@@ -2,7 +2,7 @@
 import { usePathname } from "next/navigation";
 
 const LINKS = [
-  { href: "/", label: "Live" },
+  { href: "/", label: "Home" },
   { href: "/station/t1", label: "T1" },
   { href: "/station/t2", label: "T2" },
   { href: "/station/finish", label: "Finish" },
