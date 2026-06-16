@@ -224,7 +224,7 @@ export function AdminClient() {
             </button>
           </div>
           <p className="text-[11px] text-[var(--muted)] mb-2 font-mono break-all">
-            bib,name,type,team_name,category,relay_swimmer,relay_cyclist,relay_runner
+            bib,name,type,gender,athlete_names,category
           </p>
           <textarea
             value={csv}
@@ -255,8 +255,24 @@ export function AdminClient() {
                   key={p.id}
                   className="flex items-center gap-2 py-2 border-b border-[var(--line)] last:border-0"
                 >
-                  <span className="w-10 text-[var(--muted)] tnum">#{p.bib}</span>
-                  <span className="flex-1 truncate">{p.teamName ?? p.name}</span>
+                  <span
+                    className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                      p.type === "relay"
+                        ? "bg-[#eef0ff] text-[#3730a3]"
+                        : "bg-[#eef3f3] text-[var(--sea-800)]"
+                    }`}
+                  >
+                    {p.type === "relay" ? "TEAM" : "ATH"}
+                  </span>
+                  <span className="w-8 text-[var(--muted)] tnum">#{p.bib}</span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block truncate">{p.teamName ?? p.name}</span>
+                    {(p.type === "relay" ? p.athleteNames : p.gender) && (
+                      <span className="block truncate text-[11px] text-[var(--muted)]">
+                        {p.type === "relay" ? p.athleteNames : p.gender}
+                      </span>
+                    )}
+                  </span>
                   <select
                     value={p.status}
                     onChange={(e) => setStatus(p.id, e.target.value as ParticipantStatus)}

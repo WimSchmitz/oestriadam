@@ -15,24 +15,31 @@ const TEAMS = [
   "Oester Express", "Polder Power", "Get Wet",
 ];
 
-export const MOCK_CSV_HEADER =
-  "bib,name,type,team_name,category,relay_swimmer,relay_cyclist,relay_runner";
+export const MOCK_CSV_HEADER = "bib,name,type,gender,athlete_names,category";
 
 export function generateMockRoster(count = 24): string {
   const rows: string[] = [];
+  // Athlete and team number lists are independent and overlap — each counts from 1.
+  let indivBib = 0;
+  let relayBib = 0;
   for (let i = 0; i < count; i++) {
-    const bib = i + 1;
     const isRelay = i % 6 === 5; // every sixth entry is a relay team
     if (isRelay) {
-      const team = TEAMS[Math.floor(i / 6) % TEAMS.length];
-      const swimmer = FIRST[i % FIRST.length];
-      const cyclist = FIRST[(i + 1) % FIRST.length];
-      const runner = FIRST[(i + 2) % FIRST.length];
-      rows.push(`${bib},${team},relay,${team},Relay,${swimmer},${cyclist},${runner}`);
+      const bib = ++relayBib;
+      const team = TEAMS[(relayBib - 1) % TEAMS.length];
+      // Names are " / "-separated: the simple CSV parser splits on commas only.
+      const athletes = [
+        FIRST[i % FIRST.length],
+        FIRST[(i + 1) % FIRST.length],
+        FIRST[(i + 2) % FIRST.length],
+      ].join(" / ");
+      rows.push(`${bib},${team},relay,,${athletes},Relay`);
     } else {
+      const bib = ++indivBib;
       const name = `${FIRST[i % FIRST.length]} ${LAST[i % LAST.length]}`;
       const cat = CATS[i % CATS.length];
-      rows.push(`${bib},${name},individual,,${cat},,,`);
+      const gender = cat.startsWith("V") ? "V" : "M";
+      rows.push(`${bib},${name},individual,${gender},,${cat}`);
     }
   }
   return [MOCK_CSV_HEADER, ...rows].join("\n") + "\n";

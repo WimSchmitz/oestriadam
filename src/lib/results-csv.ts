@@ -1,7 +1,7 @@
 import type { LeaderboardEntry } from "@/lib/types";
 import { formatDuration } from "@/lib/time";
 
-const HEADER = "rank,bib,name,category,category_rank,status,swim,bike,run,total";
+const HEADER = "rank,bib,type,name,gender,athletes,group_rank,status,swim,bike,run,total";
 
 function cell(v: string | number | null): string {
   if (v === null) return "";
@@ -14,7 +14,7 @@ export function toResultsCsv(entries: LeaderboardEntry[]): string {
     const p = e.participant;
     const name = p.type === "relay" ? p.teamName ?? p.name : p.name;
     return [
-      e.rank, p.bib, name, p.category, e.categoryRank, e.progress.state,
+      e.rank, p.bib, p.type, name, p.gender, p.athleteNames, e.categoryRank, e.progress.state,
       formatDuration(e.progress.swimMs), formatDuration(e.progress.bikeMs),
       formatDuration(e.progress.runMs), formatDuration(e.progress.totalMs),
     ].map(cell).join(",");

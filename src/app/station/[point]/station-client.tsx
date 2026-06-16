@@ -1,14 +1,22 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from "react";
-import type { Point } from "@/lib/types";
+import type { Point, ParticipantType } from "@/lib/types";
+import type { SplitWarning } from "@/lib/warnings";
 
 const KEY_STORAGE = "oestriadam-station-key";
+const TYPE_STORAGE = "oestriadam-station-type";
+
+const WARN_LABEL: Record<SplitWarning, string> = {
+  duplicate: "recorded again",
+  out_of_order: "out of order",
+};
 
 interface RecentSplit {
   id: string;
   recordedAt: string;
   bib: number | null;
   name: string | null;
+  warnings: SplitWarning[];
 }
 
 interface Toast {
@@ -22,6 +30,7 @@ export function StationClient({ point, label }: { point: Point; label: string })
   const [keyError, setKeyError] = useState("");
   const [checking, setChecking] = useState(false);
   const [bib, setBib] = useState("");
+  const [type, setType] = useState<ParticipantType>("individual");
   const [recent, setRecent] = useState<RecentSplit[]>([]);
   const [toast, setToast] = useState<Toast | null>(null);
   const [busy, setBusy] = useState(false);
@@ -55,7 +64,14 @@ export function StationClient({ point, label }: { point: Point; label: string })
     const candidate = fromUrl ?? stored;
     if (candidate) verifyAndSet(candidate);
     else setKey("");
+    const storedType = localStorage.getItem(TYPE_STORAGE);
+    if (storedType === "relay" || storedType === "individual") setType(storedType);
   }, [verifyAndSet]);
+
+  function chooseType(t: ParticipantType) {
+    setType(t);
+    localStorage.setItem(TYPE_STORAGE, t);
+  }
 
   const loadRecent = useCallback(async () => {
     if (!key) return;
@@ -68,6 +84,7 @@ export function StationClient({ point, label }: { point: Point; label: string })
           recordedAt: s.recordedAt as string,
           bib: (s.bib as number | null) ?? null,
           name: (s.name as string | null) ?? null,
+          warnings: (s.warnings as SplitWarning[] | undefined) ?? [],
         })),
       );
     }
@@ -89,15 +106,21 @@ export function StationClient({ point, label }: { point: Point; label: string })
       const res = await fetch("/api/splits", {
         method: "POST",
         headers: { "content-type": "application/json", "x-station-key": key },
-        body: JSON.stringify({ action: "record", bib: Number(bib), point }),
+        body: JSON.stringify({ action: "record", bib: Number(bib), point, type }),
       });
       const data = await res.json();
       if (res.ok) {
-        flash({ kind: "ok", text: `✅ #${data.participant.bib} ${data.participant.name}` });
+        const who = `#${data.participant.bib} ${data.participant.name}`;
+        const warns = (data.warnings as SplitWarning[] | undefined) ?? [];
+        if (warns.length) {
+          flash({ kind: "warn", text: `⚠️ ${who} — ${warns.map((w) => WARN_LABEL[w]).join(", ")}, please check` });
+        } else {
+          flash({ kind: "ok", text: `✅ ${who}` });
+        }
         setBib("");
         loadRecent();
       } else if (data.error === "unknown_bib") {
-        flash({ kind: "warn", text: `⚠️ Unknown bib #${bib} — tell admin` });
+        flash({ kind: "warn", text: `⚠️ Unknown bib #${bib} (${type === "relay" ? "team" : "athlete"}) — tell admin` });
       } else if (res.status === 401) {
         flash({ kind: "err", text: "🔒 Wrong station key" });
       } else {
@@ -204,6 +227,26 @@ export function StationClient({ point, label }: { point: Point; label: string })
       <div className="flex-1 flex flex-col p-4 max-w-sm w-full mx-auto">
         <h1 className="text-lg font-extrabold text-[var(--sea-800)]">{label}</h1>
 
+        {/* Athlete and team numbers overlap, so the operator picks which list
+            this bib belongs to. The choice sticks between recordings. */}
+        <div className="mt-3 grid grid-cols-2 gap-1 p-1 rounded-2xl bg-[#eef3f3]" role="tablist" aria-label="Participant type">
+          {([["individual", "Athlete"], ["relay", "Team"]] as const).map(([t, lbl]) => (
+            <button
+              key={t}
+              role="tab"
+              aria-selected={type === t}
+              onClick={() => chooseType(t)}
+              className={`py-2.5 rounded-xl text-base font-bold transition-colors ${
+                type === t
+                  ? "bg-white text-[var(--sea-800)] shadow"
+                  : "text-[var(--muted)]"
+              }`}
+            >
+              {lbl}
+            </button>
+          ))}
+        </div>
+
         {/* Bib entry: type with a keyboard OR use the on-screen keypad below. */}
         <input
           inputMode="numeric"
@@ -244,10 +287,20 @@ export function StationClient({ point, label }: { point: Point; label: string })
             </h2>
             <ul className="text-sm">
               {recent.slice(0, 4).map((s) => (
-                <li key={s.id} className="flex justify-between items-center gap-2 py-2 border-b border-[var(--line)]">
+                <li
+                  key={s.id}
+                  className={`flex justify-between items-center gap-2 py-2 border-b border-[var(--line)] ${
+                    s.warnings.length ? "bg-[#fff6e6] -mx-2 px-2 rounded-md" : ""
+                  }`}
+                >
                   <span className="min-w-0 truncate">
                     {s.bib != null && <span className="text-[var(--muted)] mr-1.5">#{s.bib}</span>}
                     <span className="font-medium">{s.name ?? "—"}</span>
+                    {s.warnings.length > 0 && (
+                      <span className="ml-1.5 text-[12px] font-semibold text-[#a15c00] whitespace-nowrap">
+                        ⚠️ {s.warnings.map((w) => WARN_LABEL[w]).join(", ")}
+                      </span>
+                    )}
                   </span>
                   <span className="flex items-center gap-3 shrink-0">
                     <span className="tnum text-[var(--muted)]">{new Date(s.recordedAt).toLocaleTimeString()}</span>

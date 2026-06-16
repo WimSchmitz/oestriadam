@@ -1,5 +1,5 @@
 import { serverSupabase } from "@/server/supabase";
-import type { Participant, Race, Split, Point, ParticipantStatus } from "@/lib/types";
+import type { Participant, Race, Split, Point, ParticipantStatus, ParticipantType } from "@/lib/types";
 import type { ParticipantInput } from "@/lib/csv";
 
 // --- mappers (snake_case DB -> camelCase domain) ---
@@ -7,7 +7,7 @@ type RaceRow = { id: string; event_name: string; gun_time: string | null };
 type PartRow = {
   id: string; bib: number; name: string; type: "individual" | "relay";
   team_name: string | null; category: string | null;
-  relay_swimmer: string | null; relay_cyclist: string | null; relay_runner: string | null;
+  gender: string | null; athlete_names: string | null;
   status: ParticipantStatus;
 };
 type SplitRow = {
@@ -18,8 +18,8 @@ type SplitRow = {
 const toRace = (r: RaceRow): Race => ({ id: r.id, eventName: r.event_name, gunTime: r.gun_time });
 const toPart = (p: PartRow): Participant => ({
   id: p.id, bib: p.bib, name: p.name, type: p.type, teamName: p.team_name,
-  category: p.category, relaySwimmer: p.relay_swimmer, relayCyclist: p.relay_cyclist,
-  relayRunner: p.relay_runner, status: p.status,
+  category: p.category, gender: p.gender, athleteNames: p.athlete_names,
+  status: p.status,
 });
 const toSplit = (s: SplitRow): Split => ({
   id: s.id, participantId: s.participant_id, point: s.point,
@@ -47,9 +47,13 @@ export async function getParticipants(): Promise<Participant[]> {
   return (data as PartRow[]).map(toPart);
 }
 
-export async function getParticipantByBib(bib: number): Promise<Participant | null> {
+export async function getParticipantByBibAndType(
+  bib: number,
+  type: ParticipantType,
+): Promise<Participant | null> {
   const db = serverSupabase();
-  const { data } = await db.from("participants").select("*").eq("bib", bib).maybeSingle();
+  const { data } = await db
+    .from("participants").select("*").eq("bib", bib).eq("type", type).maybeSingle();
   return data ? toPart(data as PartRow) : null;
 }
 
@@ -93,10 +97,9 @@ export async function upsertParticipants(rows: ParticipantInput[]): Promise<void
   const db = serverSupabase();
   const payload = rows.map((r) => ({
     bib: r.bib, name: r.name, type: r.type, team_name: r.teamName,
-    category: r.category, relay_swimmer: r.relaySwimmer,
-    relay_cyclist: r.relayCyclist, relay_runner: r.relayRunner,
+    category: r.category, gender: r.gender, athlete_names: r.athleteNames,
   }));
-  const { error } = await db.from("participants").upsert(payload, { onConflict: "bib" });
+  const { error } = await db.from("participants").upsert(payload, { onConflict: "type,bib" });
   if (error) throw error;
 }
 

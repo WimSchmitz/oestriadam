@@ -8,15 +8,17 @@ create table if not exists race (
 
 create table if not exists participants (
   id uuid primary key default gen_random_uuid(),
-  bib integer not null unique,
+  bib integer not null,
   name text not null,
   type text not null check (type in ('individual','relay')),
   team_name text,
   category text,
-  relay_swimmer text,
-  relay_cyclist text,
-  relay_runner text,
-  status text not null default 'active' check (status in ('active','dnf','dns'))
+  gender text,         -- individuals: 'M' | 'V'; null for teams
+  athlete_names text,  -- teams: free-text list of athletes; null for individuals
+  status text not null default 'active' check (status in ('active','dnf','dns')),
+  -- Athlete and team number lists are separate and overlap (both start at 1),
+  -- so a bib is only unique within its type.
+  unique (type, bib)
 );
 
 create table if not exists splits (

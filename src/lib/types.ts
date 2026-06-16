@@ -11,9 +11,8 @@ export interface Participant {
   type: ParticipantType;
   teamName: string | null;
   category: string | null;
-  relaySwimmer: string | null;
-  relayCyclist: string | null;
-  relayRunner: string | null;
+  gender: string | null; // individuals: 'M' | 'V'; null for teams
+  athleteNames: string | null; // teams: free-text list of athletes; null for individuals
   status: ParticipantStatus;
 }
 

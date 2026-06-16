@@ -31,10 +31,9 @@ export async function POST(req: NextRequest) {
   }
   if (body.action === "add") {
     const { rows, errors } = parseParticipantsCsv(
-      "bib,name,type,team_name,category,relay_swimmer,relay_cyclist,relay_runner\n" +
-        [body.row.bib, body.row.name, body.row.type, body.row.teamName ?? "",
-         body.row.category ?? "", body.row.relaySwimmer ?? "",
-         body.row.relayCyclist ?? "", body.row.relayRunner ?? ""].join(","),
+      "bib,name,type,gender,athlete_names,category\n" +
+        [body.row.bib, body.row.name, body.row.type, body.row.gender ?? "",
+         body.row.athleteNames ?? "", body.row.category ?? ""].join(","),
     );
     if (errors.length) return NextResponse.json({ error: "validation", errors }, { status: 400 });
     await upsertParticipants(rows);

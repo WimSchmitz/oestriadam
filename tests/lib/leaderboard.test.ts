@@ -6,7 +6,7 @@ const race: Race = { id: "r", eventName: "Oestriadam", gunTime: "2026-06-20T10:0
 
 const p = (id: string, bib: number, over: Partial<Participant> = {}): Participant => ({
   id, bib, name: `A${bib}`, type: "individual", teamName: null,
-  category: "M", relaySwimmer: null, relayCyclist: null, relayRunner: null,
+  category: "M", gender: "M", athleteNames: null,
   status: "active", ...over,
 });
 
@@ -62,11 +62,13 @@ describe("buildLeaderboard", () => {
     expect(dnf.rank).toBeNull();
   });
 
-  it("assigns category rank within category", () => {
+  it("ranks individuals within their gender and teams as their own group", () => {
     const participants = [
-      p("a", 1, { category: "M" }),
-      p("b", 2, { category: "V" }),
-      p("c", 3, { category: "M" }),
+      p("a", 1, { gender: "M" }),
+      p("b", 2, { gender: "V" }),
+      p("c", 3, { gender: "M" }),
+      p("d", 4, { type: "relay", gender: null, teamName: "Team Speed" }),
+      p("e", 5, { type: "relay", gender: null, teamName: "De Krabben" }),
     ];
     const fin = (pid: string, t: string) => [
       split(pid, "t1", "2026-06-20T10:20:00.000Z"),
@@ -77,11 +79,15 @@ describe("buildLeaderboard", () => {
       ...fin("a", "2026-06-20T12:30:00.000Z"),
       ...fin("b", "2026-06-20T12:10:00.000Z"),
       ...fin("c", "2026-06-20T12:20:00.000Z"),
+      ...fin("d", "2026-06-20T12:40:00.000Z"),
+      ...fin("e", "2026-06-20T12:15:00.000Z"),
     ];
     const lb = buildLeaderboard(race, participants, splits);
     const byBib = Object.fromEntries(lb.map((e) => [e.participant.bib, e]));
     expect(byBib[3].categoryRank).toBe(1); // fastest M
     expect(byBib[1].categoryRank).toBe(2); // slower M
     expect(byBib[2].categoryRank).toBe(1); // only V
+    expect(byBib[5].categoryRank).toBe(1); // fastest team
+    expect(byBib[4].categoryRank).toBe(2); // slower team
   });
 });

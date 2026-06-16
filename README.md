@@ -33,12 +33,14 @@ Next.js (App Router, TypeScript) · Supabase (Postgres + Realtime) · Tailwind C
 ## CSV format
 
 ```
-bib,name,type,team_name,category,relay_swimmer,relay_cyclist,relay_runner
-1,Jan de Vries,individual,,M 30-39,,,
-2,Team Zeester,relay,Team Zeester,Relay,Ann,Bob,Cara
+bib,name,type,gender,athlete_names,category
+1,Jan de Vries,individual,M,,M 30-39
+1,Team Zeester,relay,,Ann / Bob / Cara,Relay
 ```
 
-`type` is `individual` or `relay`. Only `bib`, `name`, `type` are required; the rest are optional. Re-importing the same bib updates that participant.
+`type` is `individual` or `relay`. Only `bib`, `name`, `type` are required; the rest are optional. For individuals, set `gender` (`M`/`V`); for relay teams, list the members in `athlete_names` (avoid commas — they split CSV cells; use `/` or spaces).
+
+**Athlete and team numbers are separate lists and may overlap** — athlete #1 and team #1 can both exist. A bib is unique only within its type, so re-importing the same `(type, bib)` updates that participant. At a station, the operator picks **Athlete** or **Team** before recording.
 
 ## Deploy (Vercel)
 

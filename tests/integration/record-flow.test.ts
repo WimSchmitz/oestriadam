@@ -6,17 +6,16 @@ import type { Participant, Race, Split } from "@/lib/types";
 describe("record flow (CSV -> leaderboard)", () => {
   it("imports a roster and ranks a finisher ahead of an in-progress athlete", () => {
     const csv = [
-      "bib,name,type,team_name,category,relay_swimmer,relay_cyclist,relay_runner",
-      "1,Jan,individual,,M,,,",
-      "2,Piet,individual,,M,,,",
+      "bib,name,type,gender,athlete_names,category",
+      "1,Jan,individual,M,,M",
+      "2,Piet,individual,M,,M",
     ].join("\n");
     const { rows, errors } = parseParticipantsCsv(csv);
     expect(errors).toEqual([]);
 
     const participants: Participant[] = rows.map((r, i) => ({
       id: `p${i}`, bib: r.bib, name: r.name, type: r.type, teamName: r.teamName,
-      category: r.category, relaySwimmer: r.relaySwimmer, relayCyclist: r.relayCyclist,
-      relayRunner: r.relayRunner, status: "active",
+      category: r.category, gender: r.gender, athleteNames: r.athleteNames, status: "active",
     }));
     const byBib = Object.fromEntries(participants.map((p) => [p.bib, p.id]));
 

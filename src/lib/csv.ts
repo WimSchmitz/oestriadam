@@ -6,15 +6,13 @@ export interface ParticipantInput {
   type: ParticipantType;
   teamName: string | null;
   category: string | null;
-  relaySwimmer: string | null;
-  relayCyclist: string | null;
-  relayRunner: string | null;
+  gender: string | null;
+  athleteNames: string | null;
 }
 
 const REQUIRED = ["bib", "name", "type"];
 const ALL = [
-  "bib", "name", "type", "team_name", "category",
-  "relay_swimmer", "relay_cyclist", "relay_runner",
+  "bib", "name", "type", "team_name", "category", "gender", "athlete_names",
 ];
 
 function splitLine(line: string): string[] {
@@ -44,7 +42,8 @@ export function parseParticipantsCsv(text: string): {
   const has = (name: string) => ALL.includes(name) && idx(name) >= 0;
 
   const rows: ParticipantInput[] = [];
-  const seenBibs = new Set<number>();
+  // Bibs are unique per type, not globally — athlete #1 and team #1 may coexist.
+  const seenBibs = new Set<string>();
 
   for (let i = 1; i < lines.length; i++) {
     const cells = splitLine(lines[i]);
@@ -57,10 +56,6 @@ export function parseParticipantsCsv(text: string): {
       errors.push(`line ${lineNo}: invalid bib "${bibRaw}"`);
       continue;
     }
-    if (seenBibs.has(bib)) {
-      errors.push(`line ${lineNo}: duplicate bib ${bib}`);
-      continue;
-    }
     const name = (get("name") ?? "").trim();
     if (!name) errors.push(`line ${lineNo}: missing name`);
 
@@ -71,16 +66,22 @@ export function parseParticipantsCsv(text: string): {
 
     if (!name || (typeRaw !== "individual" && typeRaw !== "relay")) continue;
 
-    seenBibs.add(bib);
+    // Duplicate is per (type, bib): the same number in the athlete and team
+    // lists is allowed, the same number twice within one list is not.
+    const dupKey = `${typeRaw}:${bib}`;
+    if (seenBibs.has(dupKey)) {
+      errors.push(`line ${lineNo}: duplicate bib ${bib}`);
+      continue;
+    }
+    seenBibs.add(dupKey);
     rows.push({
       bib,
       name,
       type: typeRaw as ParticipantType,
       teamName: nullable(get("team_name")),
       category: nullable(get("category")),
-      relaySwimmer: nullable(get("relay_swimmer")),
-      relayCyclist: nullable(get("relay_cyclist")),
-      relayRunner: nullable(get("relay_runner")),
+      gender: nullable(get("gender")),
+      athleteNames: nullable(get("athlete_names")),
     });
   }
 

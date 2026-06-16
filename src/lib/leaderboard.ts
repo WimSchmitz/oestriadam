@@ -46,13 +46,15 @@ export function buildLeaderboard(
   });
 
   let rank = 0;
-  const catCounter = new Map<string, number>();
+  const groupCounter = new Map<string, number>();
   for (const e of entries) {
     if (!isRankable(e.progress)) continue;
     e.rank = ++rank;
-    const cat = e.participant.category ?? "—";
-    const next = (catCounter.get(cat) ?? 0) + 1;
-    catCounter.set(cat, next);
+    // Rank within group: individuals by gender, relay teams as their own group.
+    const group =
+      e.participant.type === "relay" ? "relay" : `i:${e.participant.gender ?? "—"}`;
+    const next = (groupCounter.get(group) ?? 0) + 1;
+    groupCounter.set(group, next);
     e.categoryRank = next;
   }
 
