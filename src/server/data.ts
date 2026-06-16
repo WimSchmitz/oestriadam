@@ -114,3 +114,10 @@ export async function deleteParticipant(id: string): Promise<void> {
   const { error } = await db.from("participants").delete().eq("id", id);
   if (error) throw error;
 }
+
+// Wipe the whole roster. Splits cascade via the participant FK.
+export async function deleteAllParticipants(): Promise<void> {
+  const db = serverSupabase();
+  const { error } = await db.from("participants").delete().not("id", "is", null);
+  if (error) throw error;
+}

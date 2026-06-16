@@ -106,6 +106,26 @@ export function AdminClient() {
     load();
   }
 
+  async function clearAll() {
+    if (
+      !confirm(
+        `Delete all ${participants.length} participant(s) and their recorded splits? This cannot be undone.`,
+      )
+    )
+      return;
+    const res = await fetch("/api/participants", {
+      method: "POST",
+      headers: headers(),
+      body: JSON.stringify({ action: "clearAll" }),
+    });
+    if (res.ok) {
+      setMsg("🗑️ Cleared all participants");
+      load();
+    } else {
+      setMsg("🔒 wrong admin key");
+    }
+  }
+
   if (key === null && !keyError) {
     return (
       <main className="flex-1 flex items-center justify-center p-6 text-[var(--muted)]">
@@ -243,9 +263,19 @@ export function AdminClient() {
 
         {/* Participants */}
         <section className="bg-white border border-[var(--line)] rounded-xl p-4">
-          <h2 className="text-xs font-bold uppercase tracking-wide text-[var(--muted)] mb-2">
-            Participants · {participants.length}
-          </h2>
+          <div className="flex items-center mb-2">
+            <h2 className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">
+              Participants · {participants.length}
+            </h2>
+            {participants.length > 0 && (
+              <button
+                onClick={clearAll}
+                className="ml-auto text-xs font-semibold text-[#b42318] border border-[#f3c0bb] rounded-lg px-2.5 py-1"
+              >
+                Clear all
+              </button>
+            )}
+          </div>
           {participants.length === 0 ? (
             <p className="text-sm text-[var(--muted)]">None yet — import a roster above.</p>
           ) : (

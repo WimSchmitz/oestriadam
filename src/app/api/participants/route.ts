@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { keyIsValid } from "@/lib/auth";
 import {
   getParticipants, upsertParticipants, setParticipantStatus, deleteParticipant,
+  deleteAllParticipants,
 } from "@/server/data";
 import { parseParticipantsCsv } from "@/lib/csv";
 import type { ParticipantStatus } from "@/lib/types";
@@ -18,7 +19,7 @@ export async function GET() {
 }
 
 // POST handles: { action: "import", csv } | { action: "add", row } |
-//   { action: "status", id, status } | { action: "delete", id }
+//   { action: "status", id, status } | { action: "delete", id } | { action: "clearAll" }
 export async function POST(req: NextRequest) {
   if (!adminAuthed(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const body = await req.json();
@@ -45,6 +46,10 @@ export async function POST(req: NextRequest) {
   }
   if (body.action === "delete") {
     await deleteParticipant(body.id);
+    return NextResponse.json({ ok: true });
+  }
+  if (body.action === "clearAll") {
+    await deleteAllParticipants();
     return NextResponse.json({ ok: true });
   }
   return NextResponse.json({ error: "bad action" }, { status: 400 });
